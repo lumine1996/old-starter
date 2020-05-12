@@ -111,6 +111,9 @@ public class RandomContentUtils {
         poolSize += allowNumber ? 10 : 0;
         poolSize += allowUpper ? 26 : 0;
         poolSize += allowLower ? 26 : 0;
+        if (poolSize == 0) {
+            return "PoolSize0";
+        }
 
         // 确定字符池
         StringBuilder stringBuilder = new StringBuilder();
