@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Spring Boot Configuration ###
+/src/main/resources/application-test.yml
+/src/main/resources/application-prod.yml
+/src/main/resources/application-dev.yml

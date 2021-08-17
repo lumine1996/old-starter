@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cgm.starter.account.mapper.SysUserMapper">
+    <resultMap type="com.cgm.starter.account.entity.SysUser" id="BaseMap">
+        <result property="enable" column="is_enabled" jdbcType="BOOLEAN"/>
+    </resultMap>
+
+    <!--按用户名查询-->
+    <select id="selectByUsername" resultMap="BaseMap">
+        SELECT
+        id, organization_id, username, password, nickname,
+        last_login_time, is_enabled, create_time, update_time, updated_by, avatar
+        FROM sys_user
+        WHERE username = #{username}
+    </select>
+
+    <!--查询用户列表-->
+    <select id="listUsers" resultType="com.cgm.starter.account.dto.UserInfoDTO">
+        SELECT
+        su.id, su.username, su.name, org.name organization_name,
+        su.is_enabled enabled, su.create_time, su.last_login_time
+        FROM sys_user su
+        JOIN organization org ON su.organization_id = org.id
+        WHERE 1 = 1
+        <if test="paramDTO.organizationId != null and paramDTO.organizationId != ''">
+            AND su.organization_id = #{paramDTO.organizationId}
+        </if>
+        <if test="paramDTO.organizationName != null and paramDTO.organizationName != ''">
+            <bind name="organizationNameLike" value="'%'+paramDTO.organizationName+'%'"/>
+            AND org.name like #{organizationNameLike}
+        </if>
+        <if test="paramDTO.name != null and paramDTO.name != ''">
+            <bind name="nameLike" value="'%'+paramDTO.name+'%'"/>
+            AND (su.name like #{nameLike} OR su.username like #{nameLike})
+        </if>
+        <if test="paramDTO.enabled != null and paramDTO.enabled">
+            AND su.is_enabled = 1
+        </if>
+        <if test="paramDTO.enabled != null and !paramDTO.enabled">
+            AND su.is_enabled = 0
+        </if>
+        ORDER BY su.id
+    </select>
+
+    <!--根据用户名列表查询用户列表-->
+    <select id="listUserByUsername" resultType="com.cgm.starter.account.dto.UserInfoDTO">
+        SELECT
+        su.id, su.username, su.name, org.name organization_name,
+        su.is_enabled enabled, su.create_time, su.last_login_time
+        FROM sys_user su
+        JOIN organization org ON su.organization_id = org.id
+        WHERE 1 = 1
+        <if test="organizationId != null and organizationId != ''">
+            AND su.organization_id = #{organizationId}
+        </if>
+        <if test="usernameList != null and usernameList.size() > 0">
+            AND su.username in
+            <foreach item="username" collection="usernameList" separator="," open="(" close=")" index="">
+                #{username}
+            </foreach>
+        </if>
+        ORDER BY su.id
+    </select>
+
+</mapper>

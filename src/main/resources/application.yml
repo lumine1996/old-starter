@@ -1,3 +1,41 @@
 server:
-  port:
-    8100
+  port: 8100
+
+spring:
+  application:
+    name: cgm-starter
+  datasource:
+    url: jdbc:mysql://47.100.137.154:3306/starter?serverTimezone=Asia/Shanghai
+    hikari:
+      username: starter
+      password: 0Starter8
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      connection-timeout: 60000
+      validation-timeout: 3000
+      idle-timeout: 60000
+      login-timeout: 5
+      max-lifetime: 60000
+      maximum-pool-size: 10
+      minimum-idle: 10
+      read-only: false
+  messages:
+    basename: messages/messages
+    encoding: utf-8
+    use-code-as-default-message: true
+  servlet:
+    multipart:
+      max-file-size: 20480MB
+      max-request-size: 20480MB
+
+logging:
+  level:
+    com.cgm.starter.account: debug
+    com.cgm.starter.client: debug
+    com.cgm.starter.currency: debug
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+
+extra:
+  default-avatar: https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif
