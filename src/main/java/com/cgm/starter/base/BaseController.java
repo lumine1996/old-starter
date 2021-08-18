@@ -63,8 +63,9 @@ public class BaseController {
             }
 
             // 输出简化后的错误堆栈
-            log.error(exception.getMessage());
-            res.getTrace().forEach(log::error);
+            StringBuilder traceBuilder = new StringBuilder();
+            res.getTrace().forEach(e -> traceBuilder.append(e).append(System.lineSeparator()).append("\t"));
+            log.error(exception.getMessage() + "\n{}", traceBuilder);
 
             // 多语言提示
             res.setMessage(messageSource.getMessage(res.getCode(), null, locale));

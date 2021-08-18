@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class ExceptionConverter {
-    private static final String TRACE_BREAK = "\r\n\t";
+    private static final String TRACE_BREAK = System.lineSeparator() + "\t";
     private static final String BASE_PACKAGE = ExceptionConverter.class.getPackage().getName()
             .replace(".base", "");
     private static final String TIMEOUT_EXCEPTION_SIGN = "Timeout";
