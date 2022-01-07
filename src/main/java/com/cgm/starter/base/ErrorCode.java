@@ -27,6 +27,7 @@ public class ErrorCode {
     public static final String USER_JWT_SIGNATURE_ERROR = "user.jwt_signature_error";
 
     public static final String USER_PERMISSION_DENIED = "user.permission_denied";
+    public static final String USER_ORGANIZATION_MISMATCH = "user.organization_mismatch";
     public static final String USER_ORGANIZATION_INVALID = "user.organization_invalid";
 
     public static final String USER_INCORRECT_FORMAT = "user.incorrect_format";
