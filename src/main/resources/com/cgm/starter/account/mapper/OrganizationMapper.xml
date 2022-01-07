@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cgm.starter.account.mapper.OrganizationMapper">
+    <resultMap type="com.cgm.starter.account.entity.Organization" id="BaseMap">
+    </resultMap>
+
+    <!--查询组织列表-->
+    <select id="listOrganization" resultMap="BaseMap">
+        SELECT
+        org.id, org.name, org.english_name, org.short_name, org.create_time, org.update_time
+        FROM organization org
+        WHERE 1 = 1
+        <if test="paramDTO.name != null and paramDTO.name != ''">
+            <bind name="nameLike" value="'%'+paramDTO.name+'%'"/>
+            AND (org.name like #{nameLike} OR org.short_name like #{nameLike} OR org.english_name like #{nameLike})
+        </if>
+        ORDER BY org.id DESC
+    </select>
+
+</mapper>

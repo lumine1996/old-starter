@@ -13,5 +13,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties("extra")
 public class ExtraConfig {
+    /**
+     * 默认用户头像的地址
+     */
     private String defaultAvatar;
 }

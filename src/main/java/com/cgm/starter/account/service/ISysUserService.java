@@ -1,5 +1,6 @@
 package com.cgm.starter.account.service;
 
+import com.cgm.starter.account.dto.UserDetailDTO;
 import com.cgm.starter.account.dto.UserInfoDTO;
 import com.cgm.starter.account.dto.UserParamDTO;
 import com.cgm.starter.account.entity.SysUser;
@@ -21,12 +22,11 @@ public interface ISysUserService extends UserDetailsService {
     SysUser getById(Integer id);
 
     /**
-     * 根据token查询用户
+     * 查询当前用户基本信息
      *
-     * @param token 用户token
-     * @return 用户
+     * @return 用户基本信息
      */
-    UserInfoDTO getInfoByToken(String token);
+    UserInfoDTO getMyInfo();
 
     /**
      * 根据用户名查询用户
@@ -42,7 +42,7 @@ public interface ISysUserService extends UserDetailsService {
      * @param userParamDTO 查询参数
      * @return 用户列表
      */
-    PageInfo<UserInfoDTO> listUsers(UserParamDTO userParamDTO);
+    PageInfo<UserDetailDTO> listUsers(UserParamDTO userParamDTO);
 
     /**
      * 根据用户名列表查询用户列表
@@ -73,7 +73,7 @@ public interface ISysUserService extends UserDetailsService {
      * @param user 用户
      * @return 用户
      */
-    SysUser updateUser(SysUser user);
+    UserDetailDTO updateUser(UserDetailDTO user);
 
     /**
      * 删除用户

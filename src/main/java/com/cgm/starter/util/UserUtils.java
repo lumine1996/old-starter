@@ -1,5 +1,6 @@
 package com.cgm.starter.util;
 
+import com.cgm.starter.account.entity.SysRole;
 import com.cgm.starter.account.entity.SysUser;
 import com.cgm.starter.base.BaseException;
 import com.cgm.starter.base.Constant;
@@ -9,6 +10,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author cgm
@@ -42,7 +44,7 @@ public class UserUtils {
 
     /**
      * 判断当前请求的用户是否超管
-     * 如果已经获取了用户，可以使用SysUser->hasRole("SYS_ADMIN")代替此方法
+     * 如果已经获取了用户，建议使用有参方法
      *
      * @return 是否超管
      */
@@ -60,5 +62,37 @@ public class UserUtils {
             }
         }
         return false;
+    }
+
+    /**
+     * 判断用户是否超管
+     *
+     * @param user 用户
+     * @return 是否超管
+     */
+    public static boolean isSystemAdmin(SysUser user) {
+        return user.hasRole(Constant.ROLE_SYSTEM_ADMIN);
+    }
+
+    /**
+     * 获取用户角色级别
+     *
+     * @param user 用户
+     * @return 角色级别
+     */
+    public static Integer getRoleLevel(SysUser user) {
+        return getRoleLevel(user.getRoles());
+    }
+
+    public static Integer getRoleLevel(List<SysRole> userRoleList) {
+        int level = 0;
+        if (userRoleList == null || userRoleList.isEmpty()) {
+            return level;
+        }
+
+        for (SysRole role : userRoleList) {
+            level = Math.max(level, role.getLevel() == null ? 0 : role.getLevel());
+        }
+        return level;
     }
 }

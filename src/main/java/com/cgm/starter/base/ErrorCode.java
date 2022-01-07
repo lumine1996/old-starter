@@ -44,6 +44,7 @@ public class ErrorCode {
 
     public static final String SYS_QUERY_FAILED = "sys.query_failed";
     public static final String SYS_NO_FIELD = "sys.no_field";
+    public static final String SYS_ROLE_NOT_EXIST = "sys.role_not_exist";
     public static final String SYS_PAGE_FAILED = "sys.page_failed";
     public static final String SYS_DELETE_FAILED = "sys.delete_failed";
 

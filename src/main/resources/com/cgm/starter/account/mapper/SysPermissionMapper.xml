@@ -5,24 +5,40 @@
     <resultMap type="com.cgm.starter.account.entity.SysPermission" id="BaseMap">
     </resultMap>
 
-    <!--查询指定http方法的所有权限-->
-    <select id="listPermissionsByMethod" resultMap="BaseMap">
-        SELECT
-          id, code, path
-        FROM sys_permission sp
-        WHERE
-          method = #{httpMethod}
-    </select>
-
     <!--根据权限id列出具有该权限的角色-->
     <select id="listRolesByPermissionId" resultType="java.lang.String">
         SELECT
-          sr.code
+        sr.code
         FROM
-          sys_role_permission srp
+        sys_role_permission srp
         LEFT JOIN sys_role sr ON srp.role_id = sr.id
         WHERE
-          srp.permission_id = #{permissionId}
+        srp.permission_id = #{permissionId}
+    </select>
+
+    <!--根据权限编码列出具有该权限的角色-->
+    <select id="listRolesByPermissionCode" resultType="java.lang.String">
+        SELECT
+        sr.code
+        FROM
+        sys_role_permission srp
+        JOIN sys_permission sp on srp.permission_id = sp.id
+        JOIN sys_role sr ON srp.role_id = sr.id
+        WHERE
+        sp.code = #{permissionCode}
+    </select>
+
+    <!--查询指定http方法的所有权限-->
+    <select id="getPermissionByUrlAndMethod" resultType="com.cgm.starter.account.entity.SysPermission">
+        SELECT
+        sp.id, sp.code, sp.path
+        FROM
+        sys_permission sp
+        WHERE
+        sp.method = #{method}
+        AND
+        #{url} REGEXP
+        CONCAT(CONCAT('^', REGEXP_REPLACE(sp.path, '\\{.*?\\}', '.*')), '$')
     </select>
 
 </mapper>

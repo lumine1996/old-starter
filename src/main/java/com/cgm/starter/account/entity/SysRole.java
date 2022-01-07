@@ -1,5 +1,6 @@
 package com.cgm.starter.account.entity;
 
+import com.cgm.starter.account.dto.UserRoleDTO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -28,6 +29,9 @@ public class SysRole {
     @ApiModelProperty(value = "角色名称")
     private String name;
 
+    @ApiModelProperty(value = "角色级别", hidden = true)
+    private Integer level;
+
     @ApiModelProperty(value = "创建时间", hidden = true)
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
     private Date createTime;
@@ -40,8 +44,14 @@ public class SysRole {
         this.code = code;
     }
 
+    public SysRole(UserRoleDTO userRole) {
+        this.id = userRole.getUserId();
+        this.code = userRole.getRoleCode();
+        this.name = userRole.getRoleName();
+    }
+
     @Override
-    public boolean equals(Object o){
+    public boolean equals(Object o) {
         if (this == o) {
             return true;
         }

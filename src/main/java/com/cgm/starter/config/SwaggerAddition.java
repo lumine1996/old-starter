@@ -1,6 +1,5 @@
 package com.cgm.starter.config;
 
-import com.cgm.starter.base.ResponseData;
 import com.fasterxml.classmate.TypeResolver;
 import com.google.common.collect.Sets;
 import org.springframework.http.HttpMethod;
@@ -55,7 +54,7 @@ public class SwaggerAddition implements ApiListingScannerPlugin {
                 .description("密码")
                 .type(new TypeResolver().resolve(String.class))
                 .name("password")
-                .defaultValue("123456")
+                .defaultValue("password")
                 .parameterType("query")
                 .parameterAccess("access")
                 .required(true)
@@ -64,7 +63,6 @@ public class SwaggerAddition implements ApiListingScannerPlugin {
         ResponseMessage responseMessage = new ResponseMessageBuilder()
                 .code(200)
                 .message("OK")
-                .responseModel(new ModelRef(ResponseData.class.getName()))
                 .build();
 
         Operation usernamePasswordOperation = new OperationBuilder(new CachingOperationNameGenerator())

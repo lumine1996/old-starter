@@ -1,5 +1,6 @@
 package com.cgm.starter.account.entity;
 
+import com.cgm.starter.account.dto.UserDetailDTO;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -76,6 +77,15 @@ public class SysUser implements UserDetails, Serializable {
     @Transient
     @ApiModelProperty(value = "角色列表", hidden = true)
     private transient List<SysRole> roles;
+
+    public SysUser(UserDetailDTO dto) {
+        this.id = dto.getId();
+        this.username = dto.getUsername();
+        this.roles = Arrays.stream(dto.getRoles()).map(SysRole::new).collect(Collectors.toList());
+        this.avatar = dto.getAvatar();
+        this.organizationId = dto.getOrganizationId();
+        this.password = dto.getPassword();
+    }
 
     @Override
     public boolean isEnabled() {
@@ -156,10 +166,11 @@ public class SysUser implements UserDetails, Serializable {
     }
 
     /**
-     * 数据脱敏
+     * 清理不更新的字段
      */
-    public void mask() {
+    public void cleanNotUpdateFields() {
         this.username = null;
+        this.organizationId = null;
         this.lastLoginTime = null;
         this.updateTime = null;
     }

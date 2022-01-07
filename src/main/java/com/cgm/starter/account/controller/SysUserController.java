@@ -1,5 +1,6 @@
 package com.cgm.starter.account.controller;
 
+import com.cgm.starter.account.dto.UserDetailDTO;
 import com.cgm.starter.account.dto.UserParamDTO;
 import com.cgm.starter.account.entity.SysUser;
 import com.cgm.starter.account.service.ISysUserService;
@@ -30,10 +31,10 @@ public class SysUserController extends BaseController {
         return new ResponseData(sysUserService.getById(id));
     }
 
-    @ApiOperation("根据token查询用户")
+    @ApiOperation("查询当前用户基本信息")
     @GetMapping("/info")
-    public ResponseData getInfoByToken(@ApiParam(value = "token") String token) {
-        return new ResponseData(sysUserService.getInfoByToken(token));
+    public ResponseData getMyInfo() {
+        return new ResponseData(sysUserService.getMyInfo());
     }
 
     @ApiOperation("查询用户列表")
@@ -50,7 +51,7 @@ public class SysUserController extends BaseController {
 
     @ApiOperation("更新用户")
     @PutMapping
-    public ResponseData updateUser(@ApiParam(value = "用户") @RequestBody SysUser user) {
+    public ResponseData updateUser(@ApiParam(value = "用户") @RequestBody UserDetailDTO user) {
         return new ResponseData(sysUserService.updateUser(user));
     }
 

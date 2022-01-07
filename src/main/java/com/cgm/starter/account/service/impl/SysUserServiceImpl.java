@@ -1,7 +1,9 @@
 package com.cgm.starter.account.service.impl;
 
+import com.cgm.starter.account.dto.UserDetailDTO;
 import com.cgm.starter.account.dto.UserInfoDTO;
 import com.cgm.starter.account.dto.UserParamDTO;
+import com.cgm.starter.account.dto.UserRoleDTO;
 import com.cgm.starter.account.entity.SysRole;
 import com.cgm.starter.account.entity.SysUser;
 import com.cgm.starter.account.mapper.SysRoleMapper;
@@ -15,6 +17,7 @@ import com.cgm.starter.config.ExtraConfig;
 import com.cgm.starter.util.UserUtils;
 import com.github.pagehelper.PageInfo;
 import com.github.pagehelper.page.PageMethod;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,13 +28,15 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author cgm
  */
 @Service
+@Slf4j
 public class SysUserServiceImpl implements ISysUserService {
     @Resource
     private ISysUserRoleService sysUserRoleService;
@@ -53,26 +58,33 @@ public class SysUserServiceImpl implements ISysUserService {
     }
 
     @Override
-    public UserInfoDTO getInfoByToken(String token) {
+    public UserInfoDTO getMyInfo() {
         // token已验证并存储了用户信息，此处可以直接获取
         SysUser user = UserUtils.getCurrentUser();
         UserInfoDTO userInfoDTO = new UserInfoDTO(user);
-        if (StringUtils.isEmpty(user.getAvatar())) {
+        if (!StringUtils.hasText(user.getAvatar())) {
             userInfoDTO.setAvatar(extraConfig.getDefaultAvatar());
         }
         return userInfoDTO;
     }
 
     @Override
-    public PageInfo<UserInfoDTO> listUsers(UserParamDTO userParamDTO) {
-        SysUser user = UserUtils.getCurrentUser();
-        if (!user.hasRole(Constant.ROLE_SYSTEM_ADMIN)) {
-            userParamDTO.setOrganizationId(user.getOrganizationId());
+    public PageInfo<UserDetailDTO> listUsers(UserParamDTO userParamDTO) {
+        if (UserUtils.isSystemAdmin()) {
+            userParamDTO.setOrganizationId(null);
         }
 
         PageMethod.startPage(userParamDTO.getPage(), userParamDTO.getLimit());
-        List<UserInfoDTO> listUsers = sysUserMapper.listUsers(userParamDTO);
-        return new PageInfo<>(listUsers);
+        List<UserDetailDTO> userList = sysUserMapper.listUsers(userParamDTO);
+
+        // 查询用户角色并匹配
+        List<Integer> userIdList = userList.stream().map(UserDetailDTO::getId).collect(Collectors.toList());
+        List<UserRoleDTO> userRoleList = sysRoleMapper.listRoleByUserIdList(userIdList);
+        userList.forEach(user -> user.addRole(userRoleList.stream()
+                .filter(userRole -> user.getId().equals(userRole.getUserId()))
+                .collect(Collectors.toList()))
+        );
+        return new PageInfo<>(userList);
     }
 
     @Override
@@ -88,7 +100,7 @@ public class SysUserServiceImpl implements ISysUserService {
     public SysUser createUser(SysUser newUser) {
         // 仅允许超管/组织管理员创建用户
         SysUser currentUser = UserUtils.getCurrentUser();
-        Assert.isTrue(getPermissionLevel(currentUser) > 1, ErrorCode.USER_PERMISSION_DENIED);
+        Assert.isTrue(UserUtils.getRoleLevel(currentUser) > 1, ErrorCode.USER_PERMISSION_DENIED);
         // 组织ID默认和当前用户一致, 超管可以指定其他组织, 不能和超管一致
         boolean isSystemAdmin = currentUser.hasRole(Constant.ROLE_SYSTEM_ADMIN);
         if (!isSystemAdmin || newUser.getOrganizationId() == null) {
@@ -100,7 +112,8 @@ public class SysUserServiceImpl implements ISysUserService {
         newUser.setPassword(new BCryptPasswordEncoder().encode(newUser.getPassword()));
         sysUserMapper.insertSelective(newUser);
         Integer userRoleId = sysRoleMapper.getRoleIdByCode(Constant.ROLE_USER);
-        sysUserRoleService.allocateUserRole(newUser.getId(), userRoleId);
+        sysUserRoleService.assignUserRole(newUser.getId(), userRoleId, true);
+
         return newUser;
     }
 
@@ -110,20 +123,33 @@ public class SysUserServiceImpl implements ISysUserService {
     }
 
     @Override
-    public SysUser updateUser(SysUser user) {
+    @Transactional(rollbackFor = Exception.class)
+    public UserDetailDTO updateUser(UserDetailDTO dto) {
+        SysUser targetUser = new SysUser(dto);
+        List<SysRole> originRoleList = sysRoleMapper.listRoleByUserId(targetUser.getId());
         SysUser currentUser = UserUtils.getCurrentUser();
         // 暂时允许同级或更高级用户操作, 后续增加自更新接口
-        Assert.isTrue(getPermissionLevel(currentUser) >= getPermissionLevel(user),
+        Assert.isTrue(UserUtils.getRoleLevel(currentUser) >= UserUtils.getRoleLevel(originRoleList),
                 ErrorCode.USER_PERMISSION_DENIED);
-        user.mask();
-        if (StringUtils.isEmpty(user.getPassword())) {
-            user.setPassword(null);
+
+        // 调整角色
+        String[] originRoles = originRoleList.stream().map(SysRole::getCode).toArray(String[]::new);
+        String[] addRoles = Arrays.stream(dto.getRoles()).filter(target ->
+                !Arrays.asList(originRoles).contains(target)).toArray(String[]::new);
+        String[] removeRoles = Arrays.stream(originRoles).filter(target ->
+                !Arrays.asList(dto.getRoles()).contains(target)).toArray(String[]::new);
+        sysUserRoleService.batchAssignUserRole(dto.getId(), addRoles, true);
+        sysUserRoleService.batchAssignUserRole(dto.getId(), removeRoles, false);
+
+        targetUser.cleanNotUpdateFields();
+        if (!StringUtils.hasText(targetUser.getPassword())) {
+            targetUser.setPassword(null);
         } else {
-            user.setPassword(new BCryptPasswordEncoder().encode(user.getPassword()));
+            targetUser.setPassword(new BCryptPasswordEncoder().encode(targetUser.getPassword()));
         }
-        user.setUpdatedBy(currentUser.getId());
-        sysUserMapper.updateByPrimaryKeySelective(user);
-        return user;
+        targetUser.setUpdatedBy(currentUser.getId());
+        sysUserMapper.updateByPrimaryKeySelective(targetUser);
+        return dto;
     }
 
     @Override
@@ -133,7 +159,7 @@ public class SysUserServiceImpl implements ISysUserService {
         SysUser currentUser = UserUtils.getCurrentUser();
 
         // 仅允许更高一级的用户操作
-        Assert.isTrue(getPermissionLevel(currentUser) > getPermissionLevel(targetUser),
+        Assert.isTrue(UserUtils.getRoleLevel(currentUser) > UserUtils.getRoleLevel(targetUser),
                 ErrorCode.USER_PERMISSION_DENIED);
 
         sysUserMapper.deleteByPrimaryKey(id);
@@ -146,7 +172,7 @@ public class SysUserServiceImpl implements ISysUserService {
         SysUser currentUser = UserUtils.getCurrentUser();
 
         // 仅允许更高一级的用户操作
-        Assert.isTrue(getPermissionLevel(currentUser) > getPermissionLevel(targetUser),
+        Assert.isTrue(UserUtils.getRoleLevel(currentUser) > UserUtils.getRoleLevel(targetUser),
                 ErrorCode.USER_PERMISSION_DENIED);
 
         targetUser.setEnable(true);
@@ -161,7 +187,7 @@ public class SysUserServiceImpl implements ISysUserService {
         SysUser currentUser = UserUtils.getCurrentUser();
 
         // 仅允许更高一级的用户操作
-        if (getPermissionLevel(currentUser) <= getPermissionLevel(targetUser)) {
+        if (UserUtils.getRoleLevel(currentUser) <= UserUtils.getRoleLevel(targetUser)) {
             throw new BaseException(ErrorCode.USER_PERMISSION_DENIED);
         }
 
@@ -174,28 +200,33 @@ public class SysUserServiceImpl implements ISysUserService {
     public UserDetails loadUserByUsername(String username) {
         SysUser user = this.getByUsername(username);
         if (user == null) {
-            throw new UsernameNotFoundException("用户名不存在!");
+            throw new UsernameNotFoundException("Username Not Found!");
         }
 
-        user.setRoles(getRolesByUserId(user.getId()));
+        user.setRoles(this.getRolesByUserId(user.getId()));
         return user;
     }
 
     private List<SysRole> getRolesByUserId(Integer id) {
-        // 查询用户角色，查不到的默认赋予"USER"角色
-        List<SysRole> roleList = sysRoleMapper.listRolesByUserId(id);
-        roleList = roleList.isEmpty() ? Collections.singletonList(new SysRole(Constant.ROLE_USER)) : roleList;
+        List<SysRole> roleList;
+
+        // 从数据库查询
+        roleList = sysRoleMapper.listRoleByUserId(id);
+        this.addDefaultRole(roleList);
         return roleList;
     }
 
-    private Integer getPermissionLevel(SysUser user) {
-        // 超管 > 组织管理员 > 普通用户，0为未注册用户预留
-        if (user.hasRole(Constant.ROLE_SYSTEM_ADMIN)) {
-            return 3;
+    private void addDefaultRole(List<SysRole> roleList) {
+        // 默认赋予"USER"角色, 对正常创建的用户无影响
+        boolean hasRoleUser = false;
+        for (SysRole role : roleList) {
+            if (Constant.ROLE_USER.equals(role.getCode())) {
+                hasRoleUser = true;
+                break;
+            }
         }
-        if (user.hasRole(Constant.ROLE_ORG_ADMIN)) {
-            return 2;
+        if (!hasRoleUser) {
+            roleList.add(new SysRole(Constant.ROLE_USER));
         }
-        return 1;
     }
 }

@@ -5,17 +5,44 @@
     <resultMap type="com.cgm.starter.account.entity.SysRole" id="BaseMap">
     </resultMap>
 
-    <!--根据用户id查询用户具有的角色-->
-    <select id="listRolesByUserId" resultMap="BaseMap">
+    <!--根据用户ID查询用户具有的角色-->
+    <select id="listRoleByUserId" resultMap="BaseMap">
         SELECT
-          id, code, name
+        id, code, name, level
         FROM sys_role sr
         WHERE EXISTS (
-          SELECT id
-          FROM sys_user_role sur
-          WHERE sur.user_id = #{userId}
-          AND sur.role_id = sr.id
+        SELECT id
+        FROM sys_user_role sur
+        WHERE sur.user_id = #{userId}
+        AND sur.role_id = sr.id
         )
+    </select>
+
+    <!--根据用户ID列表查询具有的角色-->
+    <select id="listRoleByUserIdList" resultType="com.cgm.starter.account.dto.UserRoleDTO">
+        SELECT
+        su.id user_id,
+        sr.id role_id,
+        sr.code role_code,
+        sr.name role_name
+        FROM sys_user_role sur
+        JOIN sys_user su ON sur.user_id = su.id
+        JOIN sys_role sr ON sur.role_id = sr.id
+        WHERE 1 = 1
+        <if test="userIdList != null and userIdList.size() > 0">
+            AND sur.user_id IN
+            <foreach item="userId" collection="userIdList" separator="," open="(" close=")" index="">
+                #{userId}
+            </foreach>
+        </if>
+    </select>
+
+    <!--根据用户ID查询用户管理的角色-->
+    <select id="listRoleBelow" resultMap="BaseMap">
+        SELECT
+        id, code, name, level
+        FROM sys_role sr
+        WHERE sr.level &lt; #{level}
     </select>
 
     <!--根据角色编码查询角色ID-->

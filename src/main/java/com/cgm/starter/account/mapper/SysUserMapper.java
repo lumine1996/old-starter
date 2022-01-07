@@ -1,5 +1,6 @@
 package com.cgm.starter.account.mapper;
 
+import com.cgm.starter.account.dto.UserDetailDTO;
 import com.cgm.starter.account.dto.UserInfoDTO;
 import com.cgm.starter.account.dto.UserParamDTO;
 import com.cgm.starter.account.entity.SysUser;
@@ -26,7 +27,7 @@ public interface SysUserMapper extends Mapper<SysUser> {
      * @param userParamDTO 查询参数
      * @return 用户列表
      */
-    List<UserInfoDTO> listUsers(@Param("paramDTO") UserParamDTO userParamDTO);
+    List<UserDetailDTO> listUsers(@Param("paramDTO") UserParamDTO userParamDTO);
 
     /**
      * 根据用户名列表查询用户列表
@@ -36,5 +37,5 @@ public interface SysUserMapper extends Mapper<SysUser> {
      * @return 用户列表
      */
     List<UserInfoDTO> listUserByUsername(@Param("organizationId") Integer organizationId,
-                                     @Param("usernameList") List<String> usernameList);
+                                         @Param("usernameList") List<String> usernameList);
 }
